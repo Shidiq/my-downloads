@@ -1,0 +1,8 @@
+.venv/
+data/
+__pycache__/
+*.pyc
+tests/fixtures/
+tests/data/
+config.json
+.DS_Store

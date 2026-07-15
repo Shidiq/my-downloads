@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>my-downloads — duplicates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/htmx.min.js"></script>
+</head>
+<body hx-boost="true">
+
+<header>
+  <div class="header-inner">
+    <h1><a href="/">📥 My Downloads</a></h1>
+    <div class="header-actions">
+      <div id="scan-status" hx-boost="false">
+        {% include "_scan_status.html" %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<main class="dup-main">
+  <div class="toolbar">
+    <span><a href="/">← back to library</a></span>
+    <span class="dim">
+      {{ groups | length }} duplicate group{{ 's' if groups | length != 1 }}
+      {% if groups %}— {{ wasted | human_size }} reclaimable{% endif %}
+    </span>
+  </div>
+
+  {% if resolved %}
+  <p class="settings-saved">Moved {{ resolved }} file{{ 's' if resolved != 1 }} to Trash.</p>
+  {% endif %}
+
+  {% if scan.running %}
+  <p class="dim">A scan is running — duplicate detection may be incomplete until it finishes.</p>
+  {% endif %}
+
+  {% if groups %}
+  <form method="post" action="/duplicates/resolve" hx-boost="false"
+        hx-post="/duplicates/resolve" hx-swap="none">
+    <div class="dup-actions">
+      <button type="submit" name="group" value="all">Resolve all groups — keep selected, trash the rest</button>
+      <span class="dim">Files go to the macOS Trash (recoverable), never deleted permanently.</span>
+    </div>
+
+    {% for sha, rows in groups.items() %}
+    <div class="dup-group">
+      <div class="dup-group-head">
+        <span>{{ rows | length }} identical files · {{ rows[0].size | human_size }} each</span>
+        <code class="dim" title="sha256">{{ sha[:16] }}…</code>
+        <button type="submit" name="group" value="{{ sha }}">Resolve this group</button>
+      </div>
+      <div class="dup-files">
+        {% for f in rows %}
+        <label class="dup-file">
+          <input type="radio" name="keep_{{ sha }}" value="{{ f.id }}" {{ 'checked' if loop.first }}>
+          <img src="/thumbs/{{ f.id }}" alt="" loading="lazy">
+          <span class="dup-file-name" title="{{ f.relpath }}">{{ f.relpath }}</span>
+          <span class="dim">modified {{ f.mtime | timestamp }}</span>
+          <a href="{% if browser_mime(f.ext or '') %}/files/{{ f.id }}/view{% else %}#{% endif %}"
+             {% if browser_mime(f.ext or '') %}target="_blank"{% else %}hx-post="/files/{{ f.id }}/open" hx-swap="none"{% endif %}
+             hx-boost="false" class="dim">preview</a>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="dim dup-hint">Selected file is kept (oldest pre-selected); the rest go to Trash.</p>
+    </div>
+    {% endfor %}
+  </form>
+  {% else %}
+  <p class="empty">No duplicates found 🎉{% if scan.running %} (scan still running){% endif %}</p>
+  {% endif %}
+</main>
+</div>
+
+<div id="modal"></div>
+</body>
+</html>

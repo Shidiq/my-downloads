@@ -1,0 +1,17 @@
+{% if scan.running %}
+<span class="scan-note" hx-get="/rescan/status" hx-trigger="load delay:1s" hx-target="#scan-status" hx-swap="innerHTML">
+  {% if scan.phase == 'hash' %}
+  hashing… {{ scan.hash_done }}/{{ scan.hash_total }}
+  {% else %}
+  scanning… {{ scan.done }}/{{ scan.total }}
+  {% endif %}
+</span>
+{% else %}
+<button hx-post="/rescan" hx-target="#scan-status" hx-swap="innerHTML">⟳ Rescan</button>
+{% if scan.finished_at %}
+<span class="scan-note" title="{{ scan.errors | join('&#10;') }}">
+  +{{ scan.added }} new, {{ scan.updated }} updated, {{ scan.missing }} missing{% if scan.errors %}, {{ scan.errors | length }} errors{% endif %}
+  {% if scan.added or scan.updated or scan.missing %}<a href="/" hx-boost="false">refresh</a>{% endif %}
+</span>
+{% endif %}
+{% endif %}

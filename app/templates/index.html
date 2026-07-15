@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>my-downloads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/htmx.min.js"></script>
+</head>
+<body hx-boost="true">
+
+<header>
+  <div class="header-inner">
+    <h1><a href="/">📥 My Downloads</a></h1>
+    <form method="get" action="/" class="search">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="order" value="{{ order }}">
+      <input type="hidden" name="category" value="{{ category }}">
+      <input type="hidden" name="view" value="{{ view }}">
+      <input type="search" name="q" value="{{ q }}" placeholder="Search file name…" autocomplete="off">
+    </form>
+    <div class="header-actions">
+      <div id="scan-status" hx-boost="false">
+        {% include "_scan_status.html" %}
+      </div>
+      <button class="icon-btn" hx-get="/settings" hx-target="#modal" hx-boost="false" title="Settings">⚙️</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<aside>
+  <details class="sidebar-section" open>
+    <summary><h3>Categories</h3></summary>
+    <ul>
+      <li><a href="{{ qs(category='') }}" class="{{ 'active' if not category }}">All</a></li>
+      {% for c in categories %}
+      {% if category_counts.get(c) %}
+      <li><a href="{{ qs(category=c) }}" class="{{ 'active' if category == c }}">{{ emoji[c] }} {{ c }} ({{ category_counts[c] }})</a></li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+  </details>
+  <details class="sidebar-section" open>
+    <summary><h3>Cleanup</h3></summary>
+    <ul>
+      <li><a href="/duplicates">🔁 Duplicates{% if dup_groups %} ({{ dup_groups }}){% endif %}</a></li>
+    </ul>
+  </details>
+</aside>
+
+<main>
+  <div class="toolbar">
+    <span class="dim">{{ total }} item{{ 's' if total != 1 }}</span>
+    <span>
+      sort:
+      {% for s in ['name', 'size', 'mtime', 'added_at'] %}
+      <a href="{{ qs(sort=s, order='desc' if sort == s and order == 'asc' else 'asc') }}"
+         class="{{ 'active' if sort == s }}">{{ {'mtime': 'modified', 'added_at': 'added'}.get(s, s) }}{% if sort == s %} {{ '↑' if order == 'asc' else '↓' }}{% endif %}</a>
+      {% endfor %}
+    </span>
+    <span>
+      <a href="{{ qs(view='grid') }}" class="{{ 'active' if view == 'grid' }}">grid</a>
+      <a href="{{ qs(view='list') }}" class="{{ 'active' if view == 'list' }}">list</a>
+    </span>
+  </div>
+
+  {% if view == 'list' %}
+  <div class="table-container">
+    <table class="booklist">
+      <tr><th></th><th>Name</th><th>Category</th><th>Size</th><th>Modified</th><th></th></tr>
+      {% for f in files %}
+      <tr class="{{ 'missing' if f.missing }}">
+        <td><img src="/thumbs/{{ f.id }}" alt="" class="mini-cover" loading="lazy"></td>
+        <td>
+          {% if f.kind == 'file' and browser_mime(f.ext or '') %}
+          <a href="/files/{{ f.id }}/view" target="_blank" class="list-title" hx-boost="false">{{ f.relpath }}</a>
+          {% else %}
+          <a href="#" class="list-title" hx-post="/files/{{ f.id }}/open" hx-swap="none" hx-boost="false">{{ f.relpath }}</a>
+          {% endif %}
+          {% if f.missing %}<span class="badge">missing</span>{% endif %}
+        </td>
+        <td><span class="cat-badge cat-{{ f.category }}">{{ emoji[f.category] }} {{ f.category }}</span></td>
+        <td>{{ f.size | human_size if f.kind == 'file' else '—' }}</td>
+        <td class="dim">{{ f.mtime | timestamp }}</td>
+        <td>
+          <button class="icon-btn file-delete" hx-delete="/files/{{ f.id }}" hx-swap="none" hx-boost="false"
+                  hx-confirm="Move “{{ f.relpath }}” to Trash?" title="Move to Trash">✕</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% else %}
+  <div class="grid">
+    {% for f in files %}
+    <div class="card file-card {{ 'missing' if f.missing }}">
+      <button class="icon-btn file-delete" hx-delete="/files/{{ f.id }}" hx-swap="none" hx-boost="false"
+              hx-confirm="Move “{{ f.relpath }}” to Trash?" title="Move to Trash">✕</button>
+      {% if f.kind == 'file' and browser_mime(f.ext or '') %}
+      <a class="card-link" href="/files/{{ f.id }}/view" target="_blank" hx-boost="false" title="Open in new tab">
+      {% else %}
+      <a class="card-link" href="#" hx-post="/files/{{ f.id }}/open" hx-swap="none" hx-boost="false"
+         title="{{ 'Open in Finder' if f.kind == 'dir' else 'Open in default app' }}">
+      {% endif %}
+        <img src="/thumbs/{{ f.id }}" alt="" loading="lazy">
+        <div class="card-title" title="{{ f.relpath }}">{{ f.relpath }}</div>
+        <div class="card-author dim">{{ f.size | human_size if f.kind == 'file' }}</div>
+        <div class="card-meta">
+          <span class="cat-badge cat-{{ f.category }}">{{ emoji[f.category] }} {{ f.category }}</span>
+          {% if f.missing %}<span class="badge">missing</span>{% endif %}
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not files %}
+  <p class="empty">No files{{ ' match filters' if q or category else ' yet — hit Rescan' }}.</p>
+  {% endif %}
+</main>
+</div>
+
+<div id="modal"></div>
+</body>
+</html>

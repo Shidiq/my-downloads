@@ -1,0 +1,36 @@
+<div class="modal-backdrop" onclick="if(event.target===this)this.remove()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2>⚙ Settings</h2>
+        <p class="dim">Env var > this menu > default. Saved to config.json.</p>
+      </div>
+      <button class="close" onclick="this.closest('.modal-backdrop').remove()">✕</button>
+    </div>
+    {% if saved %}
+    <p class="settings-saved">Saved.</p>
+    {% for n in notes %}<p class="settings-note">{{ n }}</p>{% endfor %}
+    {% endif %}
+    <form hx-post="/settings" hx-target="closest .modal-backdrop" hx-swap="outerHTML" hx-boost="false">
+      <label>Downloads folder (scanned top-level)
+        <input name="downloads_root" value="{{ values.downloads_root }}" {{ 'disabled' if env.downloads_root }}>
+        {% if env.downloads_root %}<span class="dim">overridden by MYDOWNLOADS_ROOT</span>{% endif %}
+        {% if errors.downloads_root %}<span class="form-error">{{ errors.downloads_root }}</span>{% endif %}
+      </label>
+      <label>Data folder (database, thumbnails, backups) <span class="dim">— restart required</span>
+        <input name="data_dir" value="{{ values.data_dir }}" {{ 'disabled' if env.data_dir }}>
+        {% if env.data_dir %}<span class="dim">overridden by MYDOWNLOADS_DATA_DIR</span>{% endif %}
+        {% if errors.data_dir %}<span class="form-error">{{ errors.data_dir }}</span>{% endif %}
+      </label>
+      <div class="row">
+        <label class="narrow">Port <span class="dim">— restart required</span>
+          <input name="port" type="number" min="1" max="65535" value="{{ values.port }}" {{ 'disabled' if env.port }}>
+          {% if env.port %}<span class="dim">overridden by MYDOWNLOADS_PORT</span>{% endif %}
+          {% if errors.port %}<span class="form-error">{{ errors.port }}</span>{% endif %}
+        </label>
+      </div>
+      <p class="dim">Changing the downloads folder starts a rescan: entries no longer under the new folder are flagged missing, new files are added. Files are never moved or modified — deletes go to the Trash.</p>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</div>

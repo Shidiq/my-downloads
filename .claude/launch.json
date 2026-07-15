@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "my-downloads-fixtures",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "MYDOWNLOADS_ROOT=tests/fixtures MYDOWNLOADS_DATA_DIR=tests/data exec .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8010"],
+      "port": 8010
+    },
+    {
+      "name": "my-downloads",
+      "runtimeExecutable": "./run.sh",
+      "runtimeArgs": [],
+      "port": 8010
+    }
+  ]
+}
