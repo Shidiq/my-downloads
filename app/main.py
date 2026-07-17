@@ -105,6 +105,7 @@ def index(
             "SELECT category, COUNT(*) AS n FROM files GROUP BY category"
         ).fetchall()
         dup_groups = db.duplicate_group_count(conn)
+        missing_count = db.missing_count(conn)
     finally:
         conn.close()
 
@@ -123,6 +124,7 @@ def index(
             "categories": filetypes.CATEGORY_ORDER,
             "category_counts": {r["category"]: r["n"] for r in counts},
             "dup_groups": dup_groups,
+            "missing_count": missing_count,
             "total": len(files),
             "q": q, "sort": sort, "order": order, "category": category, "view": view,
             "scan": scanner.state,
@@ -200,6 +202,20 @@ def delete_file(file_id: int):
     conn = db.connect()
     try:
         conn.execute("DELETE FROM files WHERE id = ?", (file_id,))
+        conn.commit()
+    finally:
+        conn.close()
+    return Response(status_code=204, headers={"HX-Refresh": "true"})
+
+
+@app.post("/files/missing/remove")
+def remove_missing():
+    conn = db.connect()
+    try:
+        ids = [r["id"] for r in conn.execute("SELECT id FROM files WHERE missing = 1").fetchall()]
+        for fid in ids:
+            thumbs.thumb_path(fid).unlink(missing_ok=True)
+        conn.execute("DELETE FROM files WHERE missing = 1")
         conn.commit()
     finally:
         conn.close()

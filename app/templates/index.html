@@ -48,6 +48,14 @@
     <summary><h3>Cleanup</h3></summary>
     <ul>
       <li><a href="/duplicates">🔁 Duplicates{% if dup_groups %} ({{ dup_groups }}){% endif %}</a></li>
+      {% if missing_count %}
+      <li>
+        <button class="sidebar-btn" hx-post="/files/missing/remove" hx-swap="none" hx-boost="false"
+                hx-confirm="Remove {{ missing_count }} missing file record(s) from the list? This does not touch anything on disk.">
+          🗑️ Missing ({{ missing_count }})
+        </button>
+      </li>
+      {% endif %}
     </ul>
   </details>
 </aside>

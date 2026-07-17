@@ -61,3 +61,8 @@ def duplicate_group_count(conn: sqlite3.Connection) -> int:
         "GROUP BY sha256 HAVING COUNT(*) >= 2)"
     ).fetchone()
     return row["n"]
+
+
+def missing_count(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT COUNT(*) AS n FROM files WHERE missing = 1").fetchone()
+    return row["n"]

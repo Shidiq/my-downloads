@@ -427,6 +427,28 @@ aside li a.active {
   box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
 }
 
+.sidebar-btn {
+  color: var(--text-main);
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.sidebar-btn:hover {
+  background-color: var(--input-bg);
+  color: var(--accent-color);
+  transform: translateX(2px);
+}
+
 @media (prefers-color-scheme: dark) {
   aside li a.active {
     box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
